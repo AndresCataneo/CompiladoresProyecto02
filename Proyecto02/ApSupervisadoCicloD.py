@@ -165,7 +165,7 @@ def visualizar_arbol(clf):
     for txt in ax.texts:
         txt.set_color("black")
     plt.title("Árbol de Decisión para selección de ciclos desenrrollados", fontsize=16)
-    plt.savefig("Proyecto2/Imgs/arbolDec.png", dpi=300)
+    plt.savefig("Imgs/arbolDec.png", dpi=300)
     plt.close()
     print("\nÁrbol de decisión guardado como arbolDec.png")
 
