@@ -38,7 +38,6 @@ if __name__ == "__main__":
             optimizador.analiza_archivo(args[2])
             sys.exit(0)
 
-        # Comparar dos archivos
         if args[1] == "--compare":
             if len(args) != 4:
                 uso_programa()
