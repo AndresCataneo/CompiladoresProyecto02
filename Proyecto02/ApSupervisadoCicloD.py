@@ -271,8 +271,7 @@ class LoopOptimizador:
             print(f"Métricas normal:   {m_nor}")
             print(f"Métricas desenrrollado: {m_des}")
             pred, prob = self.analiza_carac(caracteristicas)
-
-            #return caracteristicas
+            
             return {
                 "iter": iteraciones,
                 "ops": ops,
