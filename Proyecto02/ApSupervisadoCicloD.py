@@ -26,13 +26,15 @@ def ejecucion_versiones(iteraciones, op_por_iteracion):
 
     """
 
-    #Cuanto tiempo tarda el ciclo sin optimizar
+    #Cuanto tiempo tarda el ciclo sin optimizar. 0.001 = 1ms por operación, 1000 operaciones = 1s
     tiempo_b = iteraciones * op_por_iteracion * 0.001
 
     # Normal
     tiempo_nor = tiempo_b * (1 + random.uniform(-0.05, 0.05))
+    #Asumimos 8 bytes por operación
     memoria_nor = iteraciones * op_por_iteracion * 8
-    tam_codigo_nor = 120 + op_por_iteracion * 2
+    # 16 para overhead tipico
+    tam_codigo_nor = 16 + op_por_iteracion * 2
 
     # Desenrrollado
         # Región de Compensación Crítica-----
@@ -51,27 +53,33 @@ def ejecucion_versiones(iteraciones, op_por_iteracion):
 
 
     # Evaluación  (Modelo de costo con funcion de aptitud basado en MLGO)
-    resultado_nor = 0.7*(1/tiempo_nor) + 0.2*(1/memoria_nor) + 0.1*(1/tam_codigo_nor)
-    resultado_des = 0.7*(1/tiempo_des) + 0.2*(1/memoria_des) + 0.1*(1/tam_codigo_des)
+    resultado_nor = 0.8*(1/tiempo_nor) + 0.19*(1/memoria_nor) + 0.01*(1/tam_codigo_nor)
+    resultado_des = 0.8*(1/tiempo_des) + 0.19*(1/memoria_des) + 0.01*(1/tam_codigo_des)
 
-    if resultado_des > resultado_nor + 0.0001:
-        opcion_optima = 1
+    # Decisión con algo de aleatoriedad para evitar sobreajuste, sobre todo que tenemos datos sinteticos
+    umbral_decision = 0.9 
+    if random.random() < umbral_decision:
+        if resultado_nor > resultado_des + 0.0001:
+            opcion_optima = 0  
+        else:
+            opcion_optima = 1
     else:
-        opcion_optima = 0
+        opcion_optima = random.randint(0, 1)  
+        
 
     return [tiempo_nor, memoria_nor, tam_codigo_nor], [tiempo_des, memoria_des, tam_codigo_des], opcion_optima
 
 #Esto esta simplificado, idealmente necesitamos mas datos y mejores caracteristicas donde la presición deberia ser mas baja
-def generate_training_data(n=400):
+def generar_datos_entrenamiento(n=400):
     """
     Función que genera datos de entrenamiento simulados para el clasificador.
     Parámetros:
         - n: número de muestras a generar
     Regresa:
-        - X: matriz de características
+        - x: matriz de características
         - y: etiquetas óptimas
     """
-    X, y = [], []
+    x, y = [], []
 
     for _ in range(n):
         iteraciones = random.randint(5, 120)
@@ -91,11 +99,10 @@ def generate_training_data(n=400):
             m_nor[0], m_nor[1], m_nor[2]
         ]
 
-        X.append(caracteristicas)
+        x.append(caracteristicas)
         y.append(mejor)
 
-    return np.array(X), np.array(y)
-
+    return np.array(x), np.array(y)
 
 def entrenamiento_modelo():
     """
@@ -104,71 +111,38 @@ def entrenamiento_modelo():
     print("="*50)
     print("Entrenemiento del modelo de clasificación de ciclos desenrrollados")
 
-    X, y = generate_training_data(450)
+    x, y = generar_datos_entrenamiento(450)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.25, random_state=42
+    datos_entr, datos_prueba, et_entr, et_prueba = train_test_split(
+        x, y, test_size=0.25, random_state=42
     )
 
-    clf = DecisionTreeClassifier(max_depth=7, random_state=42)
-    clf.fit(X_train, y_train)
+    clf = DecisionTreeClassifier(max_depth=4, random_state=42)
+    clf.fit(datos_entr, et_entr)
 
-    print("\nPrecisión del entrenamiento:", clf.score(X_train, y_train))
-    print("Precisión de la prueba:",       clf.score(X_test, y_test))
+    print("\nPrecisión del entrenamiento:", clf.score(datos_entr, et_entr))
+    print("Precisión de la prueba:",       clf.score(datos_prueba, et_prueba))
 
 
-    return clf, X_test, y_test
+    return clf, datos_prueba, et_prueba
 
-def evaluacion_modelo(clf, X_test, y_test):
+def evaluacion_modelo(clf, datos_prueba, et_prueba):
     """
         Función para evaluar el modelo entrenado
         Parámetros:
             - clf: clasificador entrenado
-            - X_test: datos de prueba
-            - y_test: etiquetas reales de prueba
+            - datos_prueba: datos de prueba
+            - et_prueba: etiquetas reales de prueba
         Regresa:
             - None 
     """
-    y_pred = clf.predict(X_test)
+    y_pred = clf.predict(datos_prueba)
 
     print("\nREPORTE DE CLASIFICACIÓN:")
-    print(classification_report(y_test, y_pred, target_names=["Normal", "desenrrollado"]))
+    print(classification_report(et_prueba, y_pred, target_names=["Normal", "desenrrollado"]))
 
     print("MATRIZ DE CONFUSIÓN:")
-    print(confusion_matrix(y_test, y_pred))
-
-def visualizar_arbol(clf):
-    """
-        Función para visualizar y guardar el árbol de decisión
-        Parámetros: 
-            - clf: clasificador entrenado
-        Regresa:
-            - None
-    """
-    feature_names = [
-    "iteraciones", "ops", "ops_totales", "ops_log",
-    "es_pequeno", "es_simple", "tiempo_nor", "mem_v1", "tam_codigo_nor"
-    ]
-
-    plt.style.use("dark_background")
-    plt.figure(figsize=(22, 12))
-    
-    plot_tree(clf, feature_names=feature_names, class_names=["Normal", "desenrrollado"], filled=True, rounded=True, fontsize=8)
-    ax = plt.gca()
-
-    # Bordes de nodos blancos
-    for artist in ax.findobj(plt.Rectangle):
-        artist.set_edgecolor("white")
-        artist.set_linewidth(1.2)
-
-    # Texto más brillante
-    for txt in ax.texts:
-        txt.set_color("black")
-    plt.title("Árbol de Decisión para selección de ciclos desenrrollados", fontsize=16)
-    plt.savefig("Imgs/arbolDec.png", dpi=300)
-    plt.close()
-    print("\nÁrbol de decisión guardado como arbolDec.png")
-
+    print(confusion_matrix(et_prueba, y_pred))
 
 def extraccion_caracteristicas_prog(ruta):
     """
@@ -229,6 +203,16 @@ def extraccion_caracteristicas_prog(ruta):
 
     return caracteristicas, (iteraciones, ops, m_nor, m_des)
 
+def funcion_costo(w):
+    """
+        Función para calcular el costo basado en las metricas w = [tiempo, memoria, tam_codigo]
+        Parámetros:
+            - w: lista con las métricas [tiempo, memoria, tam_codigo]
+        Regresa:
+            - costo calculado
+    """
+    tiempo, memoria, codigo = w
+    return 0.8*(1/tiempo) + 0.19*(1/memoria) + 0.01*(1/codigo)
 #Evitamos pasar el modelo cada vez a cada función
 class LoopOptimizador:
     """
@@ -265,7 +249,11 @@ class LoopOptimizador:
 
         print("\nRecomendación:")
         print("→ Usar desenrrollado" if pred == 1 else "→ Usar NORMAL")
+        #El árbol aprende reglas perfectas sin ambigüedad.  Así que la probabilidad será siempre alta para una clase y baja para la otra debido a datos deterministas.
+        #Esto es para facilitar la implementación y poder explicar mejor las decisiones.
         print(f"Probabilidades: Normal={prob[0]:.2f}, desenrrollado={prob[1]:.2f}")
+
+        return pred, prob
 
     def analiza_archivo(self, ruta):
         """
@@ -282,9 +270,19 @@ class LoopOptimizador:
             print(f"\nLoop detectado: iter={iteraciones}, ops={ops}")
             print(f"Métricas normal:   {m_nor}")
             print(f"Métricas desenrrollado: {m_des}")
-            self.analiza_carac(caracteristicas)
+            pred, prob = self.analiza_carac(caracteristicas)
 
-            return caracteristicas
+            #return caracteristicas
+            return {
+                "iter": iteraciones,
+                "ops": ops,
+                "m_nor": m_nor,
+                "m_des": m_des,
+                "costo_nor": funcion_costo(m_nor),
+                "costo_des": funcion_costo(m_des),
+                "pred": pred,
+                "prob": prob
+            }
 
         except FileNotFoundError:
             print(f"\nError: El archivo '{ruta}' no existe o la ruta es incorrecta.")
@@ -295,7 +293,46 @@ class LoopOptimizador:
             print(f"   → {type(e).__name__}: {e}")
             return None    
 
+def visualizar_arbol(clf):
+    """
+        Función para visualizar y guardar el árbol de decisión
+        Parámetros: 
+            - clf: clasificador entrenado
+        Regresa:
+            - None
 
+        NOTA: 
+            -Cada nodo representa una partición del espacio de características, y las ramas etiquetadas como True o False indican si la condición se cumple respecto al umbral.
+            - Las hojas muestran la clase predicha (Normal o desenrrollado) junto con la proporción de muestras de cada clase en esa hoja. 
+    """
+    #Puede que no aparezcan todas las características en los nodos, pero si se aumenta la profundidad del arbol y hay mas datos y se necesitan mas metricas para decidir, apareceran mas
+    nombre_carac = [
+    "iteraciones", "ops", "ops_totales", "ops_log",
+    "es_pequeno", "es_simple", "tiempo_nor", "mem_v1", "tam_codigo_nor"
+    ]
+
+    plt.style.use("dark_background")
+    plt.figure(figsize=(22, 12))
+    
+    plot_tree(clf, feature_names=nombre_carac, class_names=["Normal", "desenrrollado"], filled=True, rounded=True, fontsize=8)
+    ax = plt.gca()
+
+    # Colores de nodos
+    for artist in ax.findobj(plt.Rectangle):
+        artist.set_edgecolor("white")
+        artist.set_linewidth(1.2)
+    # Colores de texto
+    for txt in ax.texts:
+        if txt.get_bbox_patch() is not None:
+            txt.set_color("black")
+        else:
+            # Texto de aristas 
+            txt.set_color("white")
+            txt.set_fontweight("bold")
+    plt.title("Árbol de Decisión para selección de ciclos desenrrollados", fontsize=16)
+    plt.savefig("Imgs/arbolDec.png", dpi=300)
+    plt.close()
+    print("\nÁrbol de decisión guardado como arbolDec.png")
 
 def compara_programas(arch1, arch2, optimizador):
     """
@@ -307,13 +344,30 @@ def compara_programas(arch1, arch2, optimizador):
         - None
     """
     print("\n=================================================")
-
     print(f"Comparación de programas:  {arch1} con  {arch2}")
     print("==================================================")
 
     print("\n---- PROGRAMA 1 ----")
-    optimizador.analiza_archivo(arch1)
+    p1 = optimizador.analiza_archivo(arch1)
 
     print("\n---- PROGRAMA 2 ----")
-    optimizador.analiza_archivo(arch2)
+    p2 = optimizador.analiza_archivo(arch2)
+
+    if p1 is None or p2 is None:
+        print("\nError en análisis")
+        return
+
+    print("\n================ DECISIÓN FINAL =================")
+
+    mejor1 = max(p1["costo_nor"], p1["costo_des"])
+    mejor2 = max(p2["costo_nor"], p2["costo_des"])
+
+    if mejor1 > mejor2:
+        print(f"Se recomienda usar el PROGRAMA 1 ({arch1})")
+    else:
+        print(f"Se recomienda usar el PROGRAMA 2 ({arch2})")
+
+    print("\nJustificación:")
+    print(f"Programa 1 - mejor costo: {mejor1:.6f}")
+    print(f"Programa 2 - mejor costo: {mejor2:.6f}")
 
