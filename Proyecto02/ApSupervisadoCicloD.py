@@ -40,7 +40,7 @@ def ejecucion_versiones(iteraciones, op_por_iteracion):
         # Región de Compensación Crítica-----
     if 15 < iteraciones < 35 and 8 < op_por_iteracion < 15:
         ruido = random.uniform(-0.2, 0.2)
-        valor_desenrrollado = 0.9 + ruido   # A veces ayuda, a veces no
+        valor_desenrrollado = 0.9 + ruido   
     else:
         if iteraciones <= 20 and op_por_iteracion <= 12:
             valor_desenrrollado = 0.75
@@ -53,10 +53,11 @@ def ejecucion_versiones(iteraciones, op_por_iteracion):
 
 
     # Evaluación  (Modelo de costo con funcion de aptitud basado en MLGO)
+    #Notemos que estamos asignandole más peso al tiempo, ya que es lo que suele importar más en las optimizaciones.
     resultado_nor = 0.8*(1/tiempo_nor) + 0.19*(1/memoria_nor) + 0.01*(1/tam_codigo_nor)
     resultado_des = 0.8*(1/tiempo_des) + 0.19*(1/memoria_des) + 0.01*(1/tam_codigo_des)
 
-    # Decisión con algo de aleatoriedad para evitar sobreajuste, sobre todo que tenemos datos sinteticos
+    # Decisión con algo de aleatoriedad para evitar sobreajuste, sobre todo que tenemos datos sinteticos. Con esto el modelo puede generalizar mejor.
     umbral_decision = 0.9 
     if random.random() < umbral_decision:
         if resultado_nor > resultado_des + 0.0001:
@@ -106,7 +107,13 @@ def generar_datos_entrenamiento(n=400):
 
 def entrenamiento_modelo():
     """
-    Docstring for entrenamiento_modelo
+        Funcion para entrenar el modelo de clasificación de ciclos desenrrollados.
+        Parámetros:
+            - None
+        Regresa:
+            - clf: clasificador entrenado
+            - datos_prueba: datos de prueba
+            - et_prueba: etiquetas reales de prueba
     """
     print("="*50)
     print("Entrenemiento del modelo de clasificación de ciclos desenrrollados")
@@ -146,7 +153,8 @@ def evaluacion_modelo(clf, datos_prueba, et_prueba):
 
 def extraccion_caracteristicas_prog(ruta):
     """
-    Función para extraer características de un archivo de código .txt
+    Función para extraer características de un archivo de código .txt. 
+    Limitaciones: No Funciona con ciclos donde el límite depende de una variable de entrada o una condición compleja que cambia dinámicamente
     Parámetros:
         - ruta: ruta al archivo de código .txt
     Regresa:
@@ -156,7 +164,7 @@ def extraccion_caracteristicas_prog(ruta):
     with open(ruta, "r") as f:
         code = f.read()
 
-    # Detección de iteraciones
+    # Detección de iteraciones con estructura de python, C, pseudocodigo
     patrones = [
         r"range\((\d+)\)",
         r"<\s*(\d+)\)",
@@ -219,8 +227,6 @@ class LoopOptimizador:
     Clase que realiza el  análisis y recomendacion sobre la optimización de ciclos
     Parámetros:
         - modelo entrenado
-
-    Métodos:
     """
     def __init__(self,modelo):
         """
