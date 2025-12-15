@@ -1,0 +1,4 @@
+suma = 0
+for i in range(12):
+    suma = suma + i
+    suma += 1
