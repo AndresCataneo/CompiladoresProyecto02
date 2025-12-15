@@ -10,9 +10,9 @@ def uso_programa():
         - None
     """
     print("""
-Uso:
-    python programa.py --analyze archivo.txt
-    python programa.py --compare archivo1.txt archivo2.txt""")
+    Uso:
+        python Main.py --analizar archivo.txt
+        python Main.py --comparar archivo1.txt archivo2.txt""")
 
 
 if __name__ == "__main__":
@@ -22,23 +22,23 @@ if __name__ == "__main__":
         uso_programa()
         sys.exit(0)
     
-    if(args[1] == "--analyze" or args[1] == "--compare") and len(args) <= 4:
-        clf, X_test, y_test = apSupC.entrenamiento_modelo()
+    if(args[1] == "--analizar" or args[1] == "--comparar") and len(args) <= 4:
+        clf, datos_prueba, et_prueba = apSupC.entrenamiento_modelo()
 
-        apSupC.evaluacion_modelo(clf, X_test, y_test)
+        apSupC.evaluacion_modelo(clf, datos_prueba, et_prueba)
 
         apSupC.visualizar_arbol(clf)
 
         optimizador = apSupC.LoopOptimizador(clf)
 
-        if args[1] == "--analyze":
+        if args[1] == "--analizar":
             if len(args) != 3:
                 uso_programa()
                 sys.exit(1)
             optimizador.analiza_archivo(args[2])
             sys.exit(0)
 
-        if args[1] == "--compare":
+        if args[1] == "--comparar":
             if len(args) != 4:
                 uso_programa()
                 sys.exit(1)
