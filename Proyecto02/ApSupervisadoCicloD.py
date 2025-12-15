@@ -123,7 +123,7 @@ def entrenamiento_modelo():
     datos_entr, datos_prueba, et_entr, et_prueba = train_test_split(
         x, y, test_size=0.25, random_state=42
     )
-
+    #Con una profundidad de 4 el modelo generaliza bastante bien. Si aumentamos la profundidad como 6, sigue fucnionando, pero ya se empieza a sobreajustar
     clf = DecisionTreeClassifier(max_depth=4, random_state=42)
     clf.fit(datos_entr, et_entr)
 
