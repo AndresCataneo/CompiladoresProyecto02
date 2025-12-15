@@ -120,9 +120,7 @@ def entrenamiento_modelo():
 
     x, y = generar_datos_entrenamiento(450)
 
-    datos_entr, datos_prueba, et_entr, et_prueba = train_test_split(
-        x, y, test_size=0.25, random_state=42
-    )
+    datos_entr, datos_prueba, et_entr, et_prueba = train_test_split(x, y, test_size=0.25, random_state=42)
     #Con una profundidad de 4 el modelo generaliza bastante bien. Si aumentamos la profundidad como 6, sigue fucnionando, pero ya se empieza a sobreajustar
     clf = DecisionTreeClassifier(max_depth=4, random_state=42)
     clf.fit(datos_entr, et_entr)
@@ -375,4 +373,3 @@ def compara_programas(arch1, arch2, optimizador):
     print("\nJustificación:")
     print(f"Programa 1 - mejor costo: {mejor1:.6f}")
     print(f"Programa 2 - mejor costo: {mejor2:.6f}")
-
