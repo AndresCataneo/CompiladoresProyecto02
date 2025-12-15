@@ -1,0 +1,6 @@
+resultado = 0
+for i in range(90):
+    temp = i * 2
+    resultado = resultado + temp
+    resultado -= 1
+    resultado = resultado + i
